@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>E-Library Management</title>
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:Segoe UI, sans-serif;
+background:#eef2f7;
+}
+nav{
+background:linear-gradient(90deg,#1e3c72,#2a5298);
+color:#fff;
+padding:15px 30px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+nav ul{
+list-style:none;
+display:flex;
+gap:20px;
+margin:0;
+padding:0;
+}
+nav ul li{cursor:pointer;font-weight:500}
+.hidden{display:none}
+.container{padding:30px}
+.login-box{
+max-width:350px;
+margin:80px auto;
+background:#fff;
+padding:30px;
+border-radius:10px;
+box-shadow:0 10px 25px rgba(0,0,0,.1);
+}
+input,textarea{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+button{
+padding:8px 14px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#2a5298;
+color:#fff;
+margin-right:5px;
+}
+button:hover{background:#1e3c72}
+.books{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+}
+.book{
+background:#fff;
+padding:20px;
+border-radius:10px;
+box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+.reader-box{
+background:#fff;
+padding:30px;
+border-radius:10px;
+box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+</style>
+</head>
+<body>
+<nav id="navbar" class="hidden">
+<h2>E-Library</h2>
+<ul>
+<li onclick="showSection('books')">Books</li>
+<li onclick="logout()">Logout</li>
+</ul>
+</nav>
+<div id="loginBox" class="login-box">
+<h3>User / Admin Login</h3>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<button style="width:100%" onclick="login()">Login</button>
+<p style="font-size:13px;margin-top:10px">
+Admin → admin / admin123<br>
+User → user / user123
+</p>
+</div>
+<div id="books" class="container hidden">
+<h2>Library Books</h2>
+<div class="book" id="addBookBox" style="margin-bottom:20px">
+<h3>Add New Book</h3>
+<input id="newBookName" placeholder="Book Name">
+<textarea id="newBookContent" placeholder="Book Content (HTML allowed)"></textarea>
+<button onclick="addBook()">Add Book</button>
+</div>
+<div class="books" id="bookList"></div>
+</div>
+<div id="reader" class="container hidden">
+<div class="reader-box">
+<h2 id="readerTitle"></h2>
+<div id="readerContent"></div>
+<br>
+<button onclick="downloadBook()">Download</button>
+<button onclick="showSection('books')">Back</button>
+</div>
+</div>
+<script>
+const users = {
+  admin: { password: "admin123", role: "admin" },
+  user: { password: "user123", role: "user" }
+};
+let currentRole = "";
+let currentBook = "";
+const data = {
+"Python Programming": `
+<h3>Chapter 1: Introduction</h3> <p>Python is a high-level interpreted language designed for simplicity and readability. It supports procedural and object-oriented programming. Python is widely used in AI, data science, automation, and web development. Its syntax is close to English. Python reduces development time.</p> <pre>print("Hello Python")</pre>
+<h3>Chapter 2: Variables & Data Types</h3> <p>Variables store values in memory. Python uses dynamic typing. Common data types are int, float, string, and boolean. Variables improve code flexibility. They make programs reusable.</p> <pre>x=10 name="Amit" isActive=True</pre>
+<h3>Chapter 3: Lists</h3> <p>Lists are ordered collections. They can store mixed data types. Lists are mutable. Used in data storage. Support indexing and slicing.</p> <pre>marks=[80,90,85]</pre>
+<h3>Chapter 4: Strings</h3> <p>Strings store text. They are immutable. Python offers many string functions. Used in file and web handling. Essential in applications.</p> <pre>msg="Python"</pre>
+<h3>Chapter 5: Conditional Statements</h3> <p>Conditions control program flow. Uses if, elif, else. Supports decision making. Used in validation. Core logic concept.</p>
+<h3>Chapter 6: Loops</h3> <p>Loops repeat execution. For and while loops available. Reduce code duplication. Used in automation. Increase efficiency.</p>
+<h3>Chapter 7: Functions</h3> <p>Functions are reusable blocks. Improve modularity. Reduce repetition. Easy debugging. Improve readability.</p>
+<h3>Chapter 8: Dictionary</h3> <p>Dictionaries store key-value pairs. Fast lookup. Unordered structure. Used in real apps. Flexible storage.</p>
+<h3>Chapter 9: File Handling</h3> <p>Files store data permanently. Supports read/write. Used in logging. Helps automation. Essential for persistence.</p>
+<h3>Chapter 10: Applications</h3> <p>Python used in AI, ML, Web, Automation. Cybersecurity. Game development. Data science. Industry standard.</p>
+`,
+"Object Oriented Programming": `
+<h3>Chapter 1: Introduction to OOP</h3> <p>OOP models real-world entities. Uses objects and classes. Improves code structure. Enhances reusability. Industry standard paradigm.</p>
+<h3>Chapter 2: Class & Object</h3> <p>Class is a blueprint. Object is instance. Defines properties. Defines behavior. Foundation of OOP.</p>
+<h3>Chapter 3: Encapsulation</h3> <p>Binds data and methods. Data hiding. Improves security. Prevents misuse. Used in banking apps.</p>
+<h3>Chapter 4: Inheritance</h3> <p>Child inherits parent. Code reuse. Reduces redundancy. Hierarchical structure. Improves maintenance.</p>
+<h3>Chapter 5: Polymorphism</h3> <p>One interface many forms. Method overriding. Flexibility. Dynamic behavior. Used in frameworks.</p>
+<h3>Chapter 6: Abstraction</h3> <p>Shows essential features. Hides details. Reduces complexity. Improves security. Used in APIs.</p>
+<h3>Chapter 7: Constructor</h3> <p>Initializes objects. Same name as class. Called automatically. Sets initial values. Improves control.</p>
+<h3>Chapter 8: Destructor</h3> <p>Releases memory. Called automatically. Prevents memory leaks. Improves performance. Resource cleanup.</p>
+<h3>Chapter 9: Real Life Example</h3> <p>Bank system. Student record. Car object. Employee system. Shopping cart.</p>
+<h3>Chapter 10: Advantages</h3> <p>Reusable code. Secure. Scalable. Maintainable. Widely used.</p>
+`,
+"Data Structures": `
+<h3>Chapter 1: Introduction</h3> <p>Data Structures organize data. Improve efficiency. Optimize operations. Foundation of CS. Used everywhere.</p>
+<h3>Chapter 2: Arrays</h3> <p>Linear structure. Fixed size. Fast access. Used in programs. Simple storage.</p>
+<h3>Chapter 3: Linked List</h3> <p>Dynamic size. Nodes connected. Efficient insertion. Memory flexible. Used in systems.</p>
+<h3>Chapter 4: Stack</h3> <p>LIFO structure. Push and pop. Used in recursion. Expression evaluation. Undo operations.</p>
+<h3>Chapter 5: Queue</h3> <p>FIFO structure. Scheduling. Buffer handling. Process management. Real-time usage.</p>
+<h3>Chapter 6: Trees</h3> <p>Hierarchical structure. Root and nodes. Binary tree. Fast search. Used in databases.</p>
+<h3>Chapter 7: Graphs</h3> <p>Nodes and edges. Network modeling. Social networks. Routing algorithms. Complex relations.</p>
+`,
+"Algorithms": `
+<h3>Chapter 1: Introduction</h3> <p>Algorithm is step-by-step procedure. Solves problems. Efficiency focused. Foundation of programming. Used everywhere.</p> 
+<h3>Chapter 2: Complexity</h3> <p>Time complexity. Space complexity. Performance measurement. Big-O notation. Optimization.</p> 
+<h3>Chapter 3: Sorting Algorithms</h3> <p>Bubble sort. Selection sort. Merge sort. Quick sort. Data organization.</p> 
+<h3>Chapter 4: Searching Algorithms</h3> <p>Linear search. Binary search. Efficient lookup. Optimized access. Database use.</p> 
+<h3>Chapter 5: Divide & Conquer</h3> <p>Divide problem. Solve subproblems. Combine result. Efficient. Used in merge sort.</p> 
+<h3>Chapter 6: Greedy Method</h3> <p>Best local choice. Optimization. Fast execution. Used in scheduling. Resource allocation.</p> 
+<h3>Chapter 7: Dynamic Programming</h3> <p>Overlapping subproblems. Memoization. Optimization. Efficient solutions. Used in AI.</p> 
+<h3>Chapter 8: Backtracking</h3> <p>Trial and error. Recursive. Constraint solving. Puzzle solving. AI applications.</p> 
+<h3>Chapter 9: Graph Algorithms</h3> <p>Dijkstra. BFS. DFS. Shortest path. Networking.</p> 
+<h3>Chapter 10: Applications</h3> <p>AI. Robotics. Web search. Games. Optimization problems.</p>
+`,
+"Software Engineering": `
+<h3>Chapter 1: Introduction</h3> <p>Software Engineering applies engineering principles to software. Improves quality. Reduces cost. Ensures reliability. Industry focused.</p> 
+<h3>Chapter 2: SDLC</h3> <p>Software Development Life Cycle. Planning to maintenance. Structured process. Improves success. Used in projects.</p> 
+<h3>Chapter 3: Requirement Analysis</h3> <p>Understanding client needs. Functional requirements. Non-functional needs. Foundation stage. Avoids failures.</p> 
+<h3>Chapter 4: Design</h3> <p>System architecture. Module design. Flow diagrams. Blueprint creation. Performance planning.</p> 
+<h3>Chapter 5: Implementation</h3> <p>Actual coding. Follows design. Uses standards. Core development. Builds product.</p>
+<h3>Chapter 6: Testing</h3> <p>Finds bugs. Unit testing. Integration testing. Ensures quality. Improves reliability.</p>
+<h3>Chapter 7: Deployment</h3> <p>Release software. Production environment. User access. Final stage. Customer delivery.</p> 
+<h3>Chapter 8: Maintenance</h3> <p>Bug fixing. Performance improvement. Feature updates. Long-term support. Essential phase.</p> 
+<h3>Chapter 9: Models</h3> <p>Waterfall. Agile. Spiral. Incremental. Project dependent.</p> 
+<h3>Chapter 10: Tools</h3> <p>Version control. Testing tools. CI/CD. Documentation. Project management.</p>
+`,
+"Database Management System": `
+<h3>Chapter 1: Introduction</h3> <p>DBMS manages data. Stores securely. Easy access. Data integrity. Enterprise use.</p> 
+<h3>Chapter 2: Database Models</h3> <p>Hierarchical. Network. Relational. Object oriented. Structure data.</p> 
+<h3>Chapter 3: ER Model</h3> <p>Entity relationship. Design database. Entities. Attributes. Relationships.</p> 
+<h3>Chapter 4: Relational Model</h3> <p>Tables. Rows and columns. Primary keys. Foreign keys. Data integrity.</p> 
+<h3>Chapter 5: SQL</h3> <p>Structured Query Language. Insert. Update. Delete. Query data.</p> 
+<h3>Chapter 6: Normalization</h3> <p>Remove redundancy. Improve consistency. 1NF. 2NF. 3NF.</p> 
+<h3>Chapter 7: Transactions</h3> <p>ACID properties. Atomicity. Consistency. Isolation. Durability.</p> 
+<h3>Chapter 8: Concurrency</h3> <p>Multiple users. Locking. Deadlock. Control access. Performance.</p> 
+<h3>Chapter 9: Security</h3> <p>Authentication. Authorization. Encryption. Data safety. User roles.</p> 
+<h3>Chapter 10: Applications</h3> <p>Banking. E-commerce. College systems. ERP. Healthcare.</p>
+`,
+"Operating System": `
+<h3>Chapter 1: Introduction</h3> <p>OS manages hardware. Provides interface. Controls resources. Essential software. System backbone.</p> 
+<h3>Chapter 2: Process</h3> <p>Program in execution. Process states. Scheduling. Multitasking. Efficiency.</p> 
+<h3>Chapter 3: Threads</h3> <p>Lightweight process. Shared memory. Fast execution. Parallelism. Modern systems.</p> 
+<h3>Chapter 4: CPU Scheduling</h3> <p>FCFS. SJF. Priority. Round Robin. Performance.</p> 
+<h3>Chapter 5: Deadlock</h3> <p>Resource waiting. Circular wait. Prevention. Avoidance. Detection.</p> 
+<h3>Chapter 6: Memory Management</h3> <p>RAM allocation. Paging. Segmentation. Virtual memory. Optimization.</p> 
+<h3>Chapter 7: File System</h3> <p>Data storage. Directories. Access methods. Security. Persistence.</p> 
+<h3>Chapter 8: I/O Management</h3> <p>Device handling. Drivers. Buffering. Spooling. Efficiency.</p> 
+<h3>Chapter 9: Security</h3> <p>User authentication. Protection. Access control. System safety. Threat prevention.</p> 
+<h3>Chapter 10: Types of OS</h3> <p>Batch OS. Time sharing. Distributed. Real-time. Embedded.</p>
+`,
+"Computer Networks": `
+<h3>Chapter 1: Introduction</h3> <p>Computer Networks connect systems. Share resources. Enable communication. Internet foundation. Modern world.</p> 
+<h3>Chapter 2: Network Types</h3> <p>LAN. MAN. WAN. PAN. Coverage based.</p> 
+<h3>Chapter 3: Topologies</h3> <p>Bus. Star. Ring. Mesh. Hybrid.</p> 
+<h3>Chapter 4: OSI Model</h3> <p>7 layers. Data flow. Standardization. Protocol design. Troubleshooting.</p> 
+<h3>Chapter 5: TCP/IP</h3> <p>4 layers. Internet model. Reliable communication. Routing. Data transfer.</p> 
+<h3>Chapter 6: IP Addressing</h3> <p>IPv4. IPv6. Subnetting. Address allocation. Identification.</p> 
+<h3>Chapter 7: Protocols</h3> <p>HTTP. FTP. SMTP. DNS. Communication rules.</p> 
+<h3>Chapter 8: Routing</h3> <p>Path selection. Routers. Static routing. Dynamic routing. Efficiency.</p> 
+<h3>Chapter 9: Network Security</h3> <p>Firewalls. Encryption. Authentication. Threat prevention. Secure data.</p> 
+<h3>Chapter 10: Applications</h3> <p>Internet. Cloud computing. IoT. Streaming. Online services.</p>
+`
+};
+function login(){
+  const user = document.getElementById("username").value;
+  const pass = document.getElementById("password").value;
+  if(user!=="" && pass!==""){
+    if(users[user] && users[user].password === pass){
+      currentRole = users[user].role;
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("navbar").classList.remove("hidden");
+      showSection("books");
+      renderBooks();
+      if(currentRole === "user"){
+        document.getElementById("addBookBox").style.display = "none";
+      }
+    }else{
+      alert("Invalid Username or Password");
+    }
+  }else{
+    alert("Please enter username and password");
+  }
+}
+function logout(){location.reload();}
+function showSection(id){
+["books","reader"].forEach(s=>document.getElementById(s).classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+}
+function renderBooks(){
+bookList.innerHTML="";
+for(let book in data){
+bookList.innerHTML+=`
+<div class="book">
+<h4>${book}</h4>
+<button onclick="readBook('${book}')">Read</button>
+<button onclick="downloadBook('${book}')">Download</button>
+${currentRole==="admin" ? `<button onclick="deleteBook('${book}')" style="background:#d9534f">Delete</button>` : ""}
+</div>`;
+}
+}
+function readBook(book){
+currentBook=book;
+readerTitle.innerText=book;
+readerContent.innerHTML=data[book];
+showSection("reader");
+}
+function addBook(){
+if(!newBookName.value||!newBookContent.value){
+alert("Fill all fields");return;
+}
+data[newBookName.value]=newBookContent.value;
+newBookName.value="";
+newBookContent.value="";
+renderBooks();
+}
+function deleteBook(book){
+if(confirm("Delete "+book+"?")){
+delete data[book];
+renderBooks();
+}
+}
+function downloadBook(bookName=currentBook){
+const blob = new Blob([data[bookName]],{type:"text/html"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download=bookName+".html";
+a.click();
+URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
